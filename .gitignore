@@ -1,0 +1,15 @@
+ebin/**
+deps/**
+logs/**
+.DS_Store
+.eunit
+*.log*
+*.beam
+.erlang.cookie
+eunit.coverage.xml
+erl_crash.dump
+.dialyzer.plt
+*~
+\#*
+.#*
+tests

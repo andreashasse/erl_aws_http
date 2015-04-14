@@ -1,0 +1,24 @@
+{application, aws_http,
+ [
+  {description, "Amazon AWS HTTP helpers"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  lhttpc,
+                  crypto,
+                  jiffy
+                 ]},
+  {mod, { aws_http_app, []}},
+  {env,
+   [{profiles,
+     []
+     %% [{default,
+     %%   [{region, "eu-west-1"},
+     %%    {aws_access_key_id, "AKIAAAAAAAAAAAAAAAAA"},
+     %%    {aws_secret_access_key, "L7kBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"}]}
+     %% ]
+    }
+   ]}
+ ]}.
