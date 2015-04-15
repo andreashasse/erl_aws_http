@@ -11,32 +11,47 @@
 -export([default_decode/3]).
 -ignore_xref([default_decode/3]).
 
-post(Path, Headers, Payload0, Service, Opts) ->
+post(Path, Headers, Payload0, Callback, Opts) ->
     Payload = encode_payload(Payload0, Opts),
-    req("POST", Path, Headers, Payload, Service, Opts).
+    req("POST", Path, Headers, Payload, Callback, Opts).
 
-put(Path, Headers, Payload0, Service, Opts) ->
+put(Path, Headers, Payload0, Callback, Opts) ->
     Payload = encode_payload(Payload0, Opts),
-    req("PUT", Path, Headers, Payload, Service, Opts).
+    req("PUT", Path, Headers, Payload, Callback, Opts).
 
-get(Path, Headers, Service, Opts) ->
-    req("GET", Path, Headers, <<"">>, Service, Opts).
+get(Path, Headers, Callback, Opts) ->
+    req("GET", Path, Headers, <<"">>, Callback, Opts).
 
-delete(Path, Headers, Service, Opts) ->
-    req("DELETE", Path, Headers, <<"">>, Service, Opts).
+delete(Path, Headers, Callback, Opts) ->
+    req("DELETE", Path, Headers, <<"">>, Callback, Opts).
 
-req(Method, Path0, Headers, Payload, Service, Opts) ->
+req(Method, Path0, Headers, Payload, Callback, Opts) ->
+    Retry = aws_http_retry:init(Opts),
+    req(Method, Path0, Headers, Payload, Callback, Retry, Opts).
+
+req(Method, Path0, Headers, Payload, Callback, Retry, Opts) ->
     Path = string:join(["" | Path0], "/"),
+    Service = Callback:service_name(),
     Conf = get_conf(Service, Opts),
     URL = Conf#aws_conf.base_url ++ Path,
     NewHeaders = mk_headers(Conf, Method, Path, Headers, Payload),
-    do_call(URL, Method, NewHeaders, Payload, Opts).
+    HttpResp = do_call(URL, Method, NewHeaders, Payload, Opts),
+    case aws_http_retry:should(Retry, HttpResp, Callback) of
+        true ->
+            timer:sleep(aws_http_retry:backoff(Retry)),
+            NewRetry = aws_http_retry:incr(Retry),
+            req(Method, Path0, Headers, Payload, Callback, NewRetry, Opts);
+        false ->
+            HttpResp
+    end.
+
 
 %% ---------------------------------------------------------------------------
 %% Internal
 
 do_call(URL, Method, Headers, Payload, Opts) ->
     HttpTimeout = proplists:get_value(http_timeout, Opts, 5000),
+    %% FIXME: Handle lhttpcs error messages.
     HttpResp = lhttpc:request(URL, Method, Headers, Payload, HttpTimeout),
     decode_http_resp(HttpResp, Opts).
 
