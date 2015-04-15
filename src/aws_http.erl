@@ -54,22 +54,18 @@ encode_payload(Payload, Opts) ->
         {M, F, Args} -> erlang:apply(M, F, [Payload|Args])
     end.
 
-decode_http_resp({ok, {Code, Hdrs, Body}}, Opts) ->
+decode_http_resp({ok, {{Code, Msg}, Hdrs, Body}}, Opts) ->
     case proplists:get_value(response_body_decode, Opts,
                              {aws_http, default_decode, []}) of
-        none -> {ok, {Code, Hdrs, Body}};
+        none -> {ok, {{Code, Msg}, Hdrs, Body}};
         {M, F, Args} ->
             NewBody = erlang:apply(M, F, [Code, Body,Hdrs|Args]),
-            {ok, {Code, Hdrs, NewBody}}
+            {ok, {{Code, Msg}, Hdrs, NewBody}}
     end.
 
-default_decode(304, Body, _Headers) -> Body;
-default_decode(204, Body, _Headers) -> Body;
-default_decode(_Code, Body, Headers) ->
-    %% FIXME: Check if content type is json with proper mime type lib
-    case proplists:get_value("Content-Type", Headers) of
-        "application/json" ->
-            jiffy:decode(Body, [return_maps]);
-        __ ->
-            Body
+default_decode(Code, Body, Headers) ->
+    case {lists:member(Code, [204, 304]),
+          proplists:get_value("Content-Type", Headers)} of
+        {false, "application/json"} -> jiffy:decode(Body, [return_maps]);
+        {_, _} -> Body
     end.
