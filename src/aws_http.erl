@@ -8,8 +8,8 @@
 -ignore_xref([post/5, put/5, get/4, delete/4, req/6]).
 
 %% apply
--export([default_decode/2]).
--ignore_xref([default_decode/2]).
+-export([default_decode/3]).
+-ignore_xref([default_decode/3]).
 
 post(Path, Headers, Payload0, Service, Opts) ->
     Payload = encode_payload(Payload0, Opts),
@@ -58,10 +58,14 @@ decode_http_resp({ok, {Code, Hdrs, Body}}, Opts) ->
     case proplists:get_value(response_body_decode, Opts,
                              {aws_http, default_decode, []}) of
         none -> {ok, {Code, Hdrs, Body}};
-        {M, F, Args} -> {ok, {Code, Hdrs, erlang:apply(M, F, [Body,Hdrs|Args])}}
+        {M, F, Args} ->
+            NewBody = erlang:apply(M, F, [Code, Body,Hdrs|Args]),
+            {ok, {Code, Hdrs, NewBody}}
     end.
 
-default_decode(Body, Headers) ->
+default_decode(304, Body, _Headers) -> Body;
+default_decode(204, Body, _Headers) -> Body;
+default_decode(_Code, Body, Headers) ->
     %% FIXME: Check if content type is json with proper mime type lib
     case proplists:get_value("Content-Type", Headers) of
         "application/json" ->
