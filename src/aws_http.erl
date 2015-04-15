@@ -2,10 +2,10 @@
 
 -include("../src/aws_http.hrl").
 
--export([post/5, get/4, req/6]).
+-export([post/5, put/5, get/4, delete/4, req/6]).
 
 %% Application api
--ignore_xref([post/5, get/4, req/6]).
+-ignore_xref([post/5, put/5, get/4, delete/4, req/6]).
 
 %% apply
 -export([default_decode/2]).
@@ -15,8 +15,15 @@ post(Path, Headers, Payload0, Service, Opts) ->
     Payload = encode_payload(Payload0, Opts),
     req("POST", Path, Headers, Payload, Service, Opts).
 
+put(Path, Headers, Payload0, Service, Opts) ->
+    Payload = encode_payload(Payload0, Opts),
+    req("PUT", Path, Headers, Payload, Service, Opts).
+
 get(Path, Headers, Service, Opts) ->
     req("GET", Path, Headers, <<"">>, Service, Opts).
+
+delete(Path, Headers, Service, Opts) ->
+    req("DELETE", Path, Headers, <<"">>, Service, Opts).
 
 req(Method, Path0, Headers, Payload, Service, Opts) ->
     Path = string:join(["" | Path0], "/"),
