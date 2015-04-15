@@ -1,7 +1,7 @@
 {application, aws_http,
  [
   {description, "Amazon AWS HTTP helpers"},
-  {vsn, "0.1.2"},
+  {vsn, "0.1.4"},
   {registered, []},
   {applications, [
                   kernel,
