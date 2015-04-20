@@ -2,7 +2,7 @@
 
 -module(aws_http_auth_v4).
 
--export([sign_v4/5]).
+-export([sign_v4/6]).
 
 -include("../src/aws_http.hrl").
 
@@ -12,10 +12,17 @@ authorization(Config, CredentialScope, SignedHeaders, Signature) ->
      " SignedHeaders=", SignedHeaders, $,,
      " Signature=", Signature].
 
-sign_v4(Method, Path, Conf, Headers, Payload) ->
+sign_v4(Method, Path, QueryString, Conf, Headers, Payload) ->
+    SignPaths = lists:map(fun http_uri:encode/1, Path),
+    SignPath = string:join(["" | SignPaths], "/"),
+    SignQueryString = string:join(
+                        [http_uri:encode(K) ++ "=" ++ http_uri:encode(V) ||
+                            {K, V} <-  QueryString], "&"),
     Date = iso_8601_basic_time(),
     Headers1 = [{"x-amz-date", Date} | Headers],
-    {Request, SignedHeaders} = canonical_request(Method, Path, "", Headers1, Payload),
+    {Request, SignedHeaders} = canonical_request(
+                                 Method, SignPath, SignQueryString,
+                                 Headers1, Payload),
     CredentialScope = credential_scope(Date, Conf),
     ToSign = to_sign(Date, CredentialScope, Request),
     SigningKey = signing_key(Conf, Date),
