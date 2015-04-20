@@ -39,8 +39,8 @@ req(Method, Path0, QueryString, Headers, Payload, Callback, Retry, Opts) ->
     HttpResp = do_call(URL, Method, NewHeaders, Payload, Opts),
     case aws_http_retry:should(Retry, HttpResp, Callback) of
         true ->
-            timer:sleep(aws_http_retry:backoff(Retry)),
-            NewRetry = aws_http_retry:incr(Retry),
+            {Sleep, NewRetry} = aws_http_retry:backoff(Retry),
+            timer:sleep(Sleep),
             req(Method, Path0, QueryString, Headers, Payload, Callback,
                 NewRetry, Opts);
         false ->
@@ -89,7 +89,9 @@ decode_http_resp({ok, {{Code, Msg}, Hdrs, Body}}, Opts) ->
         {M, F, Args} ->
             NewBody = erlang:apply(M, F, [Code, Body,Hdrs|Args]),
             {ok, {{Code, Msg}, Hdrs, NewBody}}
-    end.
+    end;
+decode_http_resp({error, Rsn}, _Opts) -> {error, Rsn}.
+
 
 default_decode(Code, Body, Headers) ->
     case {lists:member(Code, [204, 304]),
