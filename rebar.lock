@@ -1,0 +1,8 @@
+[{<<"lhttpc">>,
+  {git,"git://github.com/ferd/lhttpc.git",
+       {ref,"2f3df78009102582209d5292c51a2e255782341c"}},
+  0},
+ {<<"jiffy">>,
+  {git,"git://github.com/rcouch/jiffy.git",
+       {ref,"0a2e56228dd66befc1d2ea70e7f65f8bfb5e44e3"}},
+  0}].
