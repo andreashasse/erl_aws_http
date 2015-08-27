@@ -34,7 +34,7 @@ req(Method, Path0, QueryString, Headers, Payload, Callback, Retry, Opts) ->
     Path = mk_req_path(Path0, QueryString),
     Service = Callback:service_name(),
     Conf = get_conf(Service, Opts),
-    URL = Conf#aws_conf.base_url ++ Path,
+    URL = proplists:get_value(host, Opts, Conf#aws_conf.base_url) ++ Path,
     NewHeaders = mk_headers(Conf, Method, Path0, QueryString, Headers, Payload),
     HttpResp = do_call(URL, Method, NewHeaders, Payload, Opts),
     case aws_http_retry:should(Retry, HttpResp, Callback) of
